@@ -20,7 +20,7 @@ stages:
     - task: AzureCLI@2
       displayName: Install Terraform and Run Plan
       inputs:
-        azureSubscription: 'YOUR-AZURE-SERVICE-CONNECTION'
+        azureSubscription: 'azure-connection'
         scriptType: bash
         scriptLocation: inlineScript
         inlineScript: |
@@ -63,7 +63,7 @@ stages:
           - task: AzureCLI@2
             displayName: Run Terraform Apply
             inputs:
-              azureSubscription: 'YOUR-AZURE-SERVICE-CONNECTION'
+              azureSubscription: 'azure-connection''
               scriptType: bash
               scriptLocation: inlineScript
               inlineScript: |
