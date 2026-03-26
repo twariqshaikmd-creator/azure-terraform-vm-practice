@@ -63,7 +63,7 @@ stages:
           - task: AzureCLI@2
             displayName: Run Terraform Apply
             inputs:
-              azureSubscription: 'azure-connection''
+              azureSubscription: 'azure-connection'
               scriptType: bash
               scriptLocation: inlineScript
               inlineScript: |
