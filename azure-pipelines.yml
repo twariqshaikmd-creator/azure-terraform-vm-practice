@@ -1,0 +1,86 @@
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  TF_VERSION: '1.8.5'
+  WORKING_DIR: '$(System.DefaultWorkingDirectory)'
+
+stages:
+- stage: Terraform_Validate_Plan
+  displayName: Terraform Validate and Plan
+  jobs:
+  - job: plan
+    displayName: Terraform Plan
+    steps:
+    - checkout: self
+
+    - task: AzureCLI@2
+      displayName: Install Terraform and Run Plan
+      inputs:
+        azureSubscription: 'YOUR-AZURE-SERVICE-CONNECTION'
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          set -e
+
+          if ! command -v terraform >/dev/null 2>&1; then
+            curl -fsSL https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip -o terraform.zip
+            unzip terraform.zip
+            sudo mv terraform /usr/local/bin/
+          fi
+
+          terraform version
+
+          cd "$(WORKING_DIR)"
+
+          terraform init
+
+          terraform fmt -check
+          terraform validate
+
+          terraform plan \
+            -out=tfplan \
+            -var="subscription_id=$(AZURE_SUBSCRIPTION_ID)" \
+            -var="admin_password=$(ADMIN_PASSWORD)"
+
+- stage: Terraform_Apply
+  displayName: Terraform Apply
+  dependsOn: Terraform_Validate_Plan
+  condition: succeeded()
+  jobs:
+  - deployment: apply
+    displayName: Terraform Apply
+    environment: dev
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+
+          - task: AzureCLI@2
+            displayName: Run Terraform Apply
+            inputs:
+              azureSubscription: 'YOUR-AZURE-SERVICE-CONNECTION'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -e
+
+                if ! command -v terraform >/dev/null 2>&1; then
+                  curl -fsSL https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip -o terraform.zip
+                  unzip terraform.zip
+                  sudo mv terraform /usr/local/bin/
+                fi
+
+                terraform version
+
+                cd "$(WORKING_DIR)"
+
+                terraform init
+
+                terraform apply -auto-approve \
+                  -var="subscription_id=$(AZURE_SUBSCRIPTION_ID)" \
+                  -var="admin_password=$(ADMIN_PASSWORD)"
